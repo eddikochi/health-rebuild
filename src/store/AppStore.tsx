@@ -83,6 +83,7 @@ interface AppActions {
   removePlannedSet(routineId: ID, exId: ID, setId: ID): void;
   // workout (execução)
   startWorkout(routineId: ID, date: ISODate): ID;
+  logPastWorkout(routineId: ID, date: ISODate): ID;
   completeSet(exId: ID, setId: ID, data: { actualReps: number; weightKg: number }): void;
   skipRest(): void;
   addRestSeconds(seconds: number): void;
@@ -407,6 +408,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
             })),
           };
           return { ...s, workouts: [...s.workouts, workout], activeWorkoutId: id };
+        });
+        return id;
+      },
+      logPastWorkout(routineId, date) {
+        // Registra um treino passado já concluído, sem tocar no treino ativo.
+        // As séries entram como "done" com os valores planejados (editáveis depois).
+        const id = uid();
+        setState((s) => {
+          const routine = s.routines.find((r) => r.id === routineId);
+          if (!routine) return s;
+          const completedAt = new Date(date + "T12:00:00").toISOString();
+          const workout: Workout = {
+            id,
+            date,
+            routineId: routine.id,
+            routineName: routine.name,
+            completed: true,
+            exercises: routine.exercises.map((re) => ({
+              id: uid(),
+              name: re.name,
+              restSeconds: re.restSeconds,
+              sets: re.plannedSets.map((ps, i) => ({
+                id: uid(),
+                setNumber: i + 1,
+                plannedReps: ps.reps,
+                actualReps: ps.reps,
+                weightKg: ps.weightKg,
+                status: "done" as const,
+                completedAt,
+              })),
+            })),
+          };
+          return { ...s, workouts: [...s.workouts, workout] };
         });
         return id;
       },

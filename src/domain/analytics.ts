@@ -152,6 +152,42 @@ export function getWeeklyInsight(state: AppState, ref = todayISO()): string {
   return `Você completou ${workouts}/5 treinos e atingiu a meta de hidratação em ${hydrationDays} dia(s)${cardioPart} nesta semana.`;
 }
 
+export interface DayActivity {
+  date: ISODate;
+  workout: boolean;
+  waterHit: boolean;
+  foodLogged: boolean;
+  score: number; // 0..3 — quantos pilares foram cumpridos no dia
+  workoutName?: string;
+  waterMl: number;
+  kcal: number;
+  weightKg?: number;
+}
+
+// Atividade de um dia, derivada dos registros (para o calendário de consistência).
+export function getDayActivity(state: AppState, date: ISODate): DayActivity {
+  const dayWorkouts = state.workouts.filter((w) => w.completed && w.date === date);
+  const waterMl = getDailyWaterMl(state, date);
+  const kcal = getDailyCalories(state, date);
+  const workout = dayWorkouts.length > 0;
+  const waterHit = waterMl >= state.settings.waterGoalMl;
+  const foodLogged = kcal > 0;
+  const measure = state.bodyMeasurements
+    .filter((m) => m.date === date && m.weightKg != null)
+    .at(-1);
+  return {
+    date,
+    workout,
+    waterHit,
+    foodLogged,
+    score: (workout ? 1 : 0) + (waterHit ? 1 : 0) + (foodLogged ? 1 : 0),
+    workoutName: dayWorkouts.at(-1)?.routineName,
+    waterMl,
+    kcal,
+    weightKg: measure?.weightKg,
+  };
+}
+
 export interface SeriesPoint {
   date: ISODate;
   value: number;

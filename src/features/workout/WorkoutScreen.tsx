@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { Chart } from "../../components/Chart";
 import { useFeedback } from "../../components/Feedback";
-import { Sheet, Tabs, TrashButton } from "../../components/Sheet";
+import { Tabs, TrashButton } from "../../components/Sheet";
 import { getExerciseProgress, getMaxLoad, getWorkoutVolume } from "../../domain/analytics";
 import { todayISO } from "../../domain/date";
 import type { ID, Workout, WorkoutExercise, WorkoutSet } from "../../domain/types";
 import { fmtClock, useNow } from "../../hooks/useNow";
 import { useApp } from "../../store/AppStore";
 import { ExerciseForm } from "./ExerciseForm";
+import { RegisterPastWorkout } from "./RegisterPastWorkout";
 
 type Tab = "exec" | "rotinas" | "historico";
 
@@ -455,11 +456,7 @@ function HistoryTab({ onEdit }: { onEdit: () => void }) {
       <div className="card">
         <div className="row">
           <h2>Histórico</h2>
-          <button
-            className="btn"
-            disabled={!!state.activeWorkoutId}
-            onClick={() => setRegistering(true)}
-          >
+          <button className="btn" onClick={() => setRegistering(true)}>
             + Registrar treino
           </button>
         </div>
@@ -522,48 +519,7 @@ function HistoryTab({ onEdit }: { onEdit: () => void }) {
         </>
       )}
 
-      {registering && <RegisterPastWorkout onClose={() => setRegistering(false)} onDone={onEdit} />}
+      {registering && <RegisterPastWorkout onClose={() => setRegistering(false)} />}
     </>
-  );
-}
-
-function RegisterPastWorkout({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
-  const { state, actions } = useApp();
-  const [routineId, setRoutineId] = useState(state.routines[0]?.id ?? "");
-  const [date, setDate] = useState(todayISO());
-
-  return (
-    <Sheet title="Registrar treino passado" onClose={onClose}>
-      <div className="stack">
-        <div className="field">
-          <label htmlFor="rp-routine">Rotina</label>
-          <select id="rp-routine" value={routineId} onChange={(e) => setRoutineId(e.target.value)}>
-            {state.routines.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="field">
-          <label htmlFor="rp-date">Data</label>
-          <input id="rp-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        </div>
-        <p className="muted">
-          O treino abre para edição: ajuste cargas/reps e finalize as séries.
-        </p>
-        <button
-          className="btn primary"
-          disabled={!routineId}
-          onClick={() => {
-            actions.startWorkout(routineId, date);
-            onClose();
-            onDone();
-          }}
-        >
-          Abrir para edição
-        </button>
-      </div>
-    </Sheet>
   );
 }

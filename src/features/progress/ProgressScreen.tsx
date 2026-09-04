@@ -19,6 +19,7 @@ import {
 import { todayISO } from "../../domain/date";
 import type { BodyMetricKey, ISODate } from "../../domain/types";
 import { useApp } from "../../store/AppStore";
+import { ConsistencyCalendar } from "./ConsistencyCalendar";
 
 type Tab = "geral" | "corpo" | "performance" | "consistencia";
 const TABS = [
@@ -210,6 +211,8 @@ function ConsistencyTab() {
   ];
   return (
     <>
+      <ConsistencyCalendar />
+
       <div className="card">
         <h2>Health Consistency Score</h2>
         <p className="muted">Hipótese MVP — cada linha é derivada dos seus registros.</p>
