@@ -48,7 +48,10 @@ interface AppActions {
   updateWaterLog(id: ID, ml: number): void;
   removeWaterLog(id: ID): void;
   addContainer(ml: number): void;
+  updateContainer(id: ID, ml: number): void;
   removeContainer(id: ID): void;
+  // Marca/desmarca o consumo de um recipiente no dia (fluxo gamificado da Home).
+  toggleContainerToday(containerId: ID, date: ISODate): void;
   // food library
   addFood(
     name: string,
@@ -212,11 +215,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
           waterContainers: [...s.waterContainers, { id: uid(), ml }],
         }));
       },
+      updateContainer(id, ml) {
+        setState((s) => ({
+          ...s,
+          waterContainers: s.waterContainers.map((c) => (c.id === id ? { ...c, ml } : c)),
+        }));
+      },
       removeContainer(id) {
         setState((s) => ({
           ...s,
           waterContainers: s.waterContainers.filter((c) => c.id !== id),
         }));
+      },
+      toggleContainerToday(containerId, date) {
+        setState((s) => {
+          const existing = s.waterLogs.find(
+            (l) => l.date === date && l.containerId === containerId && l.consumed,
+          );
+          if (existing) {
+            return { ...s, waterLogs: s.waterLogs.filter((l) => l.id !== existing.id) };
+          }
+          const container = s.waterContainers.find((c) => c.id === containerId);
+          if (!container) return s;
+          return {
+            ...s,
+            waterLogs: [
+              ...s.waterLogs,
+              { id: uid(), date, ml: container.ml, consumed: true, containerId },
+            ],
+          };
+        });
       },
 
       // ---- food library ----

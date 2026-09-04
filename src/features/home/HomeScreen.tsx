@@ -19,12 +19,14 @@ export function HomeScreen({ navigate }: { navigate: (s: Screen) => void }) {
   const { toast } = useFeedback();
   const today = todayISO();
   const [editGoal, setEditGoal] = useState(false);
-  const [addBottle, setAddBottle] = useState(false);
 
   const progress = getWeekProgress(state);
   const score = getConsistencyScore(state);
   const workouts = getWeeklyWorkoutCount(state, today);
   const water = getDailyWaterMl(state, today);
+  const drunkCount = state.waterContainers.filter((c) =>
+    state.waterLogs.some((l) => l.date === today && l.containerId === c.id && l.consumed),
+  ).length;
   const kcal = getDailyCalories(state, today);
   const goalMarker = Math.min(100, state.settings.weeklyGoalPct);
 
@@ -98,15 +100,59 @@ export function HomeScreen({ navigate }: { navigate: (s: Screen) => void }) {
               {water} / {state.settings.waterGoalMl} ml
             </h2>
           </div>
-          <button className="btn" onClick={() => setAddBottle(true)}>
-            + Garrafa
-          </button>
+          {water >= state.settings.waterGoalMl && water > 0 ? (
+            <span className="pill ok">Meta batida! 🎉</span>
+          ) : (
+            <span className="muted">{drunkCount}/{state.waterContainers.length} garrafas</span>
+          )}
         </div>
         <div className="bar" style={{ marginTop: 10 }}>
           <i style={{ width: Math.min(100, (water / state.settings.waterGoalMl) * 100) + "%" }} />
         </div>
-        <button className="btn ghost block" style={{ marginTop: 10 }} onClick={() => navigate("perfil")}>
-          Gerenciar hidratação
+        {state.waterContainers.length === 0 ? (
+          <p className="empty" style={{ marginTop: 10 }}>
+            Nenhuma garrafa cadastrada. Configure em Perfil › Hidratação.
+          </p>
+        ) : (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+            {state.waterContainers.map((c) => {
+              const consumed = state.waterLogs.some(
+                (l) => l.date === today && l.containerId === c.id && l.consumed,
+              );
+              return (
+                <button
+                  key={c.id}
+                  aria-pressed={consumed}
+                  aria-label={`${c.ml} ml${consumed ? " — consumida, tocar para desfazer" : " — tocar para beber"}`}
+                  onClick={() => actions.toggleContainerToday(c.id, today)}
+                  style={{
+                    border: "0",
+                    borderRadius: 14,
+                    padding: "12px 14px",
+                    minWidth: 84,
+                    minHeight: 60,
+                    cursor: "pointer",
+                    fontWeight: 800,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 2,
+                    background: consumed ? "var(--primary)" : "var(--primary-soft)",
+                    color: consumed ? "#fff" : "var(--primary-strong)",
+                    boxShadow: consumed ? "inset 0 0 0 2px var(--primary)" : "inset 0 0 0 1px var(--border)",
+                  }}
+                >
+                  <span style={{ fontSize: 20 }} aria-hidden>
+                    {consumed ? "💧" : "🩶"}
+                  </span>
+                  {c.ml} ml
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <button className="btn ghost block" style={{ marginTop: 12 }} onClick={() => navigate("perfil")}>
+          Gerenciar garrafas
         </button>
       </div>
 
@@ -145,21 +191,6 @@ export function HomeScreen({ navigate }: { navigate: (s: Screen) => void }) {
             if (n >= 1 && n <= 100) {
               actions.updateSettings({ weeklyGoalPct: n });
               toast("Meta semanal atualizada");
-            }
-          }}
-        />
-      )}
-      {addBottle && (
-        <InputSheet
-          title="Registrar água"
-          submitLabel="Registrar"
-          fields={[{ key: "ml", label: "Volume (ml)", type: "number", min: 1, value: "500" }]}
-          onClose={() => setAddBottle(false)}
-          onSubmit={(v) => {
-            const ml = Number(v.ml);
-            if (ml > 0) {
-              actions.addWaterLog(today, ml, true);
-              toast("Água registrada");
             }
           }}
         />

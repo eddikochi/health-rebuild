@@ -104,65 +104,75 @@ function GoalsTab() {
 
 function HydrationTab() {
   const { state, actions } = useApp();
+  const { confirm } = useFeedback();
   const today = todayISO();
-  const [addContainer, setAddContainer] = useState(false);
-  const logs = state.waterLogs.filter((l) => l.date === today);
+  const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<{ id: string; ml: number } | null>(null);
   const total = getDailyWaterMl(state, today);
 
   return (
     <>
       <div className="card">
-        <div className="row">
-          <div>
-            <div className="eyebrow">Hoje</div>
-            <h2>
-              {total} / {state.settings.waterGoalMl} ml
-            </h2>
-          </div>
-        </div>
-        {logs.length === 0 ? (
-          <p className="empty">Nenhum registro hoje.</p>
-        ) : (
-          logs.map((l) => (
-            <div className="item" key={l.id}>
-              <input
-                type="checkbox"
-                aria-label={`Consumido: ${l.ml} ml`}
-                checked={l.consumed}
-                onChange={() => actions.toggleWaterLog(l.id)}
-              />
-              <span className="grow">{l.ml} ml</span>
-              <TrashButton label="Remover registro" onClick={() => actions.removeWaterLog(l.id)} />
-            </div>
-          ))
-        )}
+        <div className="eyebrow">Meta diária</div>
+        <h2>
+          {total} / {state.settings.waterGoalMl} ml hoje
+        </h2>
+        <p className="muted">
+          Para registrar o consumo, toque nas garrafas na tela <b>Hoje</b>. Aqui você define
+          quais recipientes usa no dia.
+        </p>
       </div>
 
       <div className="card">
-        <div className="eyebrow">Recipientes rápidos</div>
-        <div className="stack" style={{ marginTop: 8 }}>
-          {state.waterContainers.map((c) => (
+        <div className="eyebrow">Meus recipientes</div>
+        {state.waterContainers.length === 0 ? (
+          <p className="empty">Nenhum recipiente. Adicione o primeiro abaixo.</p>
+        ) : (
+          state.waterContainers.map((c) => (
             <div className="item" key={c.id}>
-              <button className="btn grow" onClick={() => actions.addWaterLog(today, c.ml, true)}>
-                + {c.ml} ml
+              <span className="grow">💧 {c.ml} ml</span>
+              <button
+                className="btn"
+                aria-label={`Editar recipiente ${c.ml} ml`}
+                onClick={() => setEditing({ id: c.id, ml: c.ml })}
+              >
+                Editar
               </button>
-              <TrashButton label={`Remover recipiente ${c.ml} ml`} onClick={() => actions.removeContainer(c.id)} />
+              <TrashButton
+                label={`Remover recipiente ${c.ml} ml`}
+                onClick={async () => {
+                  if (await confirm({ title: `Remover recipiente de ${c.ml} ml?` }))
+                    actions.removeContainer(c.id);
+                }}
+              />
             </div>
-          ))}
-        </div>
-        <button className="btn primary" style={{ marginTop: 8 }} onClick={() => setAddContainer(true)}>
+          ))
+        )}
+        <button className="btn primary" style={{ marginTop: 8 }} onClick={() => setAdding(true)}>
           + Recipiente
         </button>
       </div>
-      {addContainer && (
+
+      {adding && (
         <InputSheet
           title="Novo recipiente"
           submitLabel="Adicionar"
           fields={[{ key: "ml", label: "Volume (ml)", type: "number", min: 1, value: "500" }]}
-          onClose={() => setAddContainer(false)}
+          onClose={() => setAdding(false)}
           onSubmit={(v) => {
             const ml = Number(v.ml);
             if (ml > 0) actions.addContainer(ml);
+          }}
+        />
+      )}
+      {editing && (
+        <InputSheet
+          title="Editar recipiente"
+          fields={[{ key: "ml", label: "Volume (ml)", type: "number", min: 1, value: String(editing.ml) }]}
+          onClose={() => setEditing(null)}
+          onSubmit={(v) => {
+            const ml = Number(v.ml);
+            if (ml > 0) actions.updateContainer(editing.id, ml);
           }}
         />
       )}

@@ -123,6 +123,7 @@ export interface WaterLog {
   date: ISODate;
   ml: number;
   consumed: boolean;
+  containerId?: ID; // recipiente que originou o consumo (quando aplicável)
 }
 
 // ---- Corpo ----
