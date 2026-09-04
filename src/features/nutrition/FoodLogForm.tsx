@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { Sheet } from "../../components/Sheet";
+import { presetGrams, UNIT_PRESETS } from "../../domain/portions";
 import type { ISODate, Meal } from "../../domain/types";
 import { useApp } from "../../store/AppStore";
+
+const CUSTOM = "__custom__";
 
 interface Props {
   date: ISODate;
@@ -15,11 +18,26 @@ export function FoodLogForm({ date, meal, onClose }: Props) {
 
   const [name, setName] = useState("");
   const [kcal, setKcal] = useState(100);
-  const [unitLabel, setUnitLabel] = useState("porção");
+  const [unitSel, setUnitSel] = useState("unidade");
+  const [customLabel, setCustomLabel] = useState("");
+  const [libUnitLabel, setLibUnitLabel] = useState("porção");
   const [unitGrams, setUnitGrams] = useState(100);
+  const [adjust, setAdjust] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [saveToLibrary, setSaveToLibrary] = useState(false);
   const [fromLibrary, setFromLibrary] = useState(false);
+
+  const unitLabel = fromLibrary
+    ? libUnitLabel
+    : unitSel === CUSTOM
+      ? customLabel.trim() || "porção"
+      : unitSel;
+
+  const onUnitChange = (value: string) => {
+    setUnitSel(value);
+    const g = presetGrams(value);
+    if (g != null) setUnitGrams(g);
+  };
 
   const grams = Math.round(quantity * unitGrams);
   const totalKcal = Math.round((kcal * grams) / 100);
@@ -29,7 +47,7 @@ export function FoodLogForm({ date, meal, onClose }: Props) {
     if (!f) return;
     setName(f.name);
     setKcal(f.kcalPer100g);
-    setUnitLabel(f.unitLabel);
+    setLibUnitLabel(f.unitLabel);
     setUnitGrams(f.unitGrams);
     setQuantity(1);
     setFromLibrary(true);
@@ -44,11 +62,11 @@ export function FoodLogForm({ date, meal, onClose }: Props) {
       kcalPer100g: kcal,
       meal,
       quantity,
-      unitLabel: unitLabel.trim() || "porção",
+      unitLabel: unitLabel || "porção",
       unitGrams,
     });
     if (saveToLibrary && !fromLibrary) {
-      actions.addFood(trimmed, kcal, meal, unitLabel.trim() || "porção", unitGrams);
+      actions.addFood(trimmed, kcal, meal, unitLabel || "porção", unitGrams);
     }
     onClose();
   };
@@ -78,14 +96,7 @@ export function FoodLogForm({ date, meal, onClose }: Props) {
           <>
             <div className="field">
               <label htmlFor="fl-name">Nome</label>
-              <input
-                id="fl-name"
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  setFromLibrary(false);
-                }}
-              />
+              <input id="fl-name" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="grid2">
               <div className="field">
@@ -99,16 +110,39 @@ export function FoodLogForm({ date, meal, onClose }: Props) {
                 />
               </div>
               <div className="field">
-                <label htmlFor="fl-unit">Unidade</label>
+                <label htmlFor="fl-unit">Como você mede?</label>
+                <select id="fl-unit" value={unitSel} onChange={(e) => onUnitChange(e.target.value)}>
+                  {UNIT_PRESETS.map((p) => (
+                    <option key={p.label} value={p.label}>
+                      {p.label}
+                    </option>
+                  ))}
+                  <option value={CUSTOM}>Outra…</option>
+                </select>
+              </div>
+            </div>
+            {unitSel === CUSTOM && (
+              <div className="field">
+                <label htmlFor="fl-custom">Nome da porção</label>
                 <input
-                  id="fl-unit"
-                  value={unitLabel}
-                  placeholder="ovo, fatia, colher…"
-                  onChange={(e) => setUnitLabel(e.target.value)}
+                  id="fl-custom"
+                  value={customLabel}
+                  placeholder="ex.: bife, punhado"
+                  onChange={(e) => setCustomLabel(e.target.value)}
                 />
               </div>
+            )}
+            <div className="row">
+              <span className="grow muted">
+                1 {unitLabel} ≈ <b>{unitGrams} g</b>
+              </span>
+              <button className="btn ghost" style={{ width: "auto" }} onClick={() => setAdjust((a) => !a)}>
+                {adjust ? "Ok" : "Ajustar peso"}
+              </button>
+            </div>
+            {adjust && (
               <div className="field">
-                <label htmlFor="fl-ug">Peso médio de 1 {unitLabel || "unidade"} (g)</label>
+                <label htmlFor="fl-ug">Peso médio de 1 {unitLabel} (g)</label>
                 <input
                   id="fl-ug"
                   type="number"
@@ -116,8 +150,9 @@ export function FoodLogForm({ date, meal, onClose }: Props) {
                   value={unitGrams}
                   onChange={(e) => setUnitGrams(Number(e.target.value))}
                 />
+                <small className="muted">Sugestão automática — refine quando quiser.</small>
               </div>
-            </div>
+            )}
           </>
         )}
 
@@ -166,7 +201,7 @@ export function FoodLogForm({ date, meal, onClose }: Props) {
 
         {fromLibrary ? (
           <button className="btn ghost" onClick={() => setFromLibrary(false)}>
-            Editar alimento / criar novo
+            Criar novo alimento
           </button>
         ) : (
           <label className="item" style={{ borderBottom: "none" }}>

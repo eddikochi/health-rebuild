@@ -6,6 +6,7 @@ import { getDailyCalories } from "../../domain/analytics";
 import { todayISO, weekStartISO } from "../../domain/date";
 import { MEALS, type Food, type ISODate, type Meal } from "../../domain/types";
 import { useApp } from "../../store/AppStore";
+import { FoodForm } from "./FoodForm";
 import { FoodLogForm } from "./FoodLogForm";
 
 type Tab = "hoje" | "plano" | "alimentos";
@@ -175,7 +176,6 @@ function LibraryTab() {
   const { confirm } = useFeedback();
   const [editing, setEditing] = useState<Food | null>(null);
   const [adding, setAdding] = useState(false);
-  const mealOptions = MEALS.map((m) => ({ value: m, label: m }));
 
   return (
     <div className="card">
@@ -206,49 +206,33 @@ function LibraryTab() {
       </button>
 
       {editing && (
-        <InputSheet
+        <FoodForm
           title={`Editar ${editing.name}`}
-          fields={[
-            { key: "name", label: "Nome", value: editing.name },
-            { key: "kcal", label: "kcal / 100 g", type: "number", min: 0, value: String(editing.kcalPer100g) },
-            { key: "unitLabel", label: "Unidade (ovo, fatia…)", value: editing.unitLabel },
-            { key: "unitGrams", label: "Peso médio da unidade (g)", type: "number", min: 1, value: String(editing.unitGrams) },
-            { key: "meal", label: "Refeição", value: editing.meal, options: mealOptions },
-          ]}
-          onClose={() => setEditing(null)}
-          onSubmit={(v) => {
-            const name = v.name.trim();
-            const kcal = Number(v.kcal);
-            const ug = Number(v.unitGrams);
-            actions.updateFood(editing.id, {
-              name: name || editing.name,
-              kcalPer100g: kcal >= 0 ? kcal : editing.kcalPer100g,
-              unitLabel: v.unitLabel.trim() || editing.unitLabel,
-              unitGrams: ug > 0 ? ug : editing.unitGrams,
-              meal: v.meal as Meal,
-            });
+          initial={{
+            name: editing.name,
+            kcalPer100g: editing.kcalPer100g,
+            meal: editing.meal,
+            unitLabel: editing.unitLabel,
+            unitGrams: editing.unitGrams,
           }}
+          onClose={() => setEditing(null)}
+          onSubmit={(v) =>
+            actions.updateFood(editing.id, {
+              name: v.name,
+              kcalPer100g: v.kcalPer100g,
+              unitLabel: v.unitLabel,
+              unitGrams: v.unitGrams,
+              meal: v.meal,
+            })
+          }
         />
       )}
       {adding && (
-        <InputSheet
+        <FoodForm
           title="Novo alimento"
           submitLabel="Adicionar"
-          fields={[
-            { key: "name", label: "Nome", value: "" },
-            { key: "kcal", label: "kcal / 100 g", type: "number", min: 0, value: "100" },
-            { key: "unitLabel", label: "Unidade (ovo, fatia…)", value: "porção" },
-            { key: "unitGrams", label: "Peso médio da unidade (g)", type: "number", min: 1, value: "100" },
-            { key: "meal", label: "Refeição", value: "Almoço", options: mealOptions },
-          ]}
           onClose={() => setAdding(false)}
-          onSubmit={(v) => {
-            const name = v.name.trim();
-            if (!name) return;
-            const kcal = Number(v.kcal);
-            const ug = Number(v.unitGrams);
-            actions.addFood(name, kcal >= 0 ? kcal : 0, v.meal as Meal, v.unitLabel.trim() || "porção", ug > 0 ? ug : 100);
-          }}
+          onSubmit={(v) => actions.addFood(v.name, v.kcalPer100g, v.meal, v.unitLabel, v.unitGrams)}
         />
       )}
     </div>
