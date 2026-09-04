@@ -4,6 +4,7 @@ import { InputSheet } from "../../components/InputSheet";
 import { Tabs, TrashButton } from "../../components/Sheet";
 import { getDailyWaterMl } from "../../domain/analytics";
 import { todayISO } from "../../domain/date";
+import { GOALS } from "../../domain/types";
 import { useApp } from "../../store/AppStore";
 
 type Tab = "dados" | "objetivos" | "hidratacao" | "preferencias";
@@ -30,10 +31,18 @@ export function ProfileScreen() {
 }
 
 function DataTab() {
-  const { state } = useApp();
+  const { state, actions } = useApp();
   const { profile } = state;
+  const { toast } = useFeedback();
+  const [editing, setEditing] = useState(false);
   return (
     <div className="card">
+      <div className="row">
+        <h2 style={{ margin: 0 }}>Meus dados</h2>
+        <button className="btn" onClick={() => setEditing(true)}>
+          Editar
+        </button>
+      </div>
       <p>
         Idade <b>{profile.age}</b>
       </p>
@@ -41,19 +50,50 @@ function DataTab() {
         Altura <b>{profile.heightCm} cm</b>
       </p>
       <p>
-        Baseline <b>{profile.baselineWeightKg} kg</b>
+        Peso base <b>{profile.baselineWeightKg} kg</b>
       </p>
+      <p className="muted">
+        Para acompanhar a evolução do peso ao longo do tempo, registre em{" "}
+        <b>Progresso › Corpo</b>.
+      </p>
+      {editing && (
+        <InputSheet
+          title="Editar meus dados"
+          fields={[
+            { key: "age", label: "Idade", type: "number", min: 1, value: String(profile.age) },
+            { key: "height", label: "Altura (cm)", type: "number", min: 1, value: String(profile.heightCm) },
+            { key: "baseline", label: "Peso base (kg)", type: "number", min: 1, value: String(profile.baselineWeightKg) },
+          ]}
+          onClose={() => setEditing(false)}
+          onSubmit={(v) => {
+            const age = Number(v.age);
+            const height = Number(v.height);
+            const baseline = Number(v.baseline);
+            actions.updateProfile({
+              age: age > 0 ? age : profile.age,
+              heightCm: height > 0 ? height : profile.heightCm,
+              baselineWeightKg: baseline > 0 ? baseline : profile.baselineWeightKg,
+            });
+            toast("Dados atualizados");
+          }}
+        />
+      )}
     </div>
   );
 }
 
 function GoalsTab() {
+  const { state, actions } = useApp();
   return (
     <div className="card">
       <h2>Objetivos</h2>
-      {["Reduzir gordura", "Melhorar condicionamento", "Manter/ganhar massa"].map((g) => (
+      {GOALS.map((g) => (
         <label className="item" key={g}>
-          <input type="checkbox" defaultChecked />
+          <input
+            type="checkbox"
+            checked={state.goals.includes(g)}
+            onChange={() => actions.toggleGoal(g)}
+          />
           <span className="grow">{g}</span>
         </label>
       ))}

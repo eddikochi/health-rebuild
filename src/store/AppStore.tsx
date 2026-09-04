@@ -39,6 +39,8 @@ interface NewExercise {
 interface AppActions {
   // settings
   updateSettings(patch: Partial<AppState["settings"]>): void;
+  updateProfile(patch: Partial<AppState["profile"]>): void;
+  toggleGoal(goal: string): void;
   // water
   addWaterLog(date: ISODate, ml: number, consumed?: boolean): void;
   toggleWaterLog(id: ID): void;
@@ -163,6 +165,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return {
       updateSettings(patch) {
         setState((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
+      },
+      updateProfile(patch) {
+        setState((s) => ({ ...s, profile: { ...s.profile, ...patch } }));
+      },
+      toggleGoal(goal) {
+        setState((s) => ({
+          ...s,
+          goals: s.goals.includes(goal)
+            ? s.goals.filter((g) => g !== goal)
+            : [...s.goals, goal],
+        }));
       },
 
       // ---- water ----

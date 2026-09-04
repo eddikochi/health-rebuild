@@ -151,9 +151,16 @@ export interface WeeklyCheckIn {
   notes?: string;
 }
 
+export const GOALS = [
+  "Reduzir gordura",
+  "Melhorar condicionamento",
+  "Manter/ganhar massa",
+] as const;
+
 export interface AppState {
   schemaVersion: number;
   profile: Profile;
+  goals: string[];
   settings: Settings;
   routines: Routine[];
   foods: Food[];

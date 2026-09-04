@@ -28,6 +28,7 @@ export function migrate(raw: any): AppState {
     schemaVersion: SCHEMA_VERSION,
     settings: { ...base.settings, ...(state.settings ?? {}) },
     profile: { ...base.profile, ...(state.profile ?? {}) },
+    goals: Array.isArray(state.goals) ? state.goals : base.goals,
   };
 
   // Normaliza unidades em alimentos/registros anteriores ao sistema de porções.

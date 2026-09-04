@@ -117,6 +117,7 @@ export function seedState(): AppState {
   return {
     schemaVersion: SCHEMA_VERSION,
     profile: { age: 41, heightCm: 176, baselineWeightKg: 79 },
+    goals: ["Reduzir gordura", "Melhorar condicionamento", "Manter/ganhar massa"],
     settings: {
       waterGoalMl: 2500,
       calorieLimit: 2000,
