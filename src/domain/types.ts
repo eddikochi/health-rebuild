@@ -25,6 +25,11 @@ export interface Settings {
   weeklyGoalPct: number;
   defaultRestSeconds: number;
   onboardedAt?: ISOTimestamp; // definido quando o onboarding é concluído/pulado
+  // Alvos semanais concretos (metas didáticas)
+  workoutMinPerWeek: number;
+  workoutMaxPerWeek: number;
+  waterDaysTarget: number; // dias/semana batendo a meta de água
+  nutritionDaysTarget: number; // dias/semana dentro do limite calórico
 }
 
 // ---- Treino: template (planejado) ----

@@ -2,11 +2,9 @@ import { useState } from "react";
 import { useFeedback } from "../../components/Feedback";
 import { InputSheet } from "../../components/InputSheet";
 import {
-  getConsistencyScore,
   getDailyCalories,
   getDailyWaterMl,
-  getWeekProgress,
-  getWeeklyWorkoutCount,
+  getWeeklyGoalReadout,
 } from "../../domain/analytics";
 import { todayISO } from "../../domain/date";
 import type { Screen } from "../../App";
@@ -18,17 +16,14 @@ export function HomeScreen({ navigate }: { navigate: (s: Screen) => void }) {
   const { state, actions } = useApp();
   const { toast } = useFeedback();
   const today = todayISO();
-  const [editGoal, setEditGoal] = useState(false);
+  const [editTargets, setEditTargets] = useState(false);
 
-  const progress = getWeekProgress(state);
-  const score = getConsistencyScore(state);
-  const workouts = getWeeklyWorkoutCount(state, today);
+  const readout = getWeeklyGoalReadout(state);
   const water = getDailyWaterMl(state, today);
   const drunkCount = state.waterContainers.filter((c) =>
     state.waterLogs.some((l) => l.date === today && l.containerId === c.id && l.consumed),
   ).length;
   const kcal = getDailyCalories(state, today);
-  const goalMarker = Math.min(100, state.settings.weeklyGoalPct);
 
   const abbr = WEEKDAYS[new Date(today + "T00:00:00").getDay()];
   const active = state.workouts.find((w) => w.id === state.activeWorkoutId);
@@ -48,37 +43,32 @@ export function HomeScreen({ navigate }: { navigate: (s: Screen) => void }) {
       <div className="card">
         <div className="row">
           <div>
-            <div className="eyebrow">Progresso semanal</div>
-            <h2>{score.total}% concluído</h2>
-            <div className="muted">Meta semanal: {state.settings.weeklyGoalPct}%</div>
+            <div className="eyebrow">Metas da semana</div>
+            <h2>
+              {readout.metCount}/{readout.total} alvos cumpridos
+            </h2>
           </div>
-          <button className="btn" onClick={() => setEditGoal(true)}>
-            Editar meta
+          <button className="btn" onClick={() => setEditTargets(true)}>
+            Editar alvos
           </button>
         </div>
-        <div className="bar" style={{ position: "relative", marginTop: 12 }}>
-          <i style={{ width: score.total + "%" }} />
-          <span
-            aria-hidden
-            style={{
-              position: "absolute",
-              top: -4,
-              left: `calc(${goalMarker}% - 1px)`,
-              width: 2,
-              height: 16,
-              background: "#333",
-            }}
-          />
+        <div className="bar" style={{ marginTop: 12 }}>
+          <i style={{ width: (readout.metCount / readout.total) * 100 + "%" }} />
         </div>
-        <div className="row" style={{ marginTop: 10 }}>
-          <span className={"pill" + (progress.delta >= 0 ? " ok" : "")}>
-            Meta {state.settings.weeklyGoalPct}%
-          </span>
-          <span className="muted">{progress.status}</span>
+        <div className="stack" style={{ marginTop: 12 }}>
+          {readout.pillars.map((p) => (
+            <div className="row" key={p.key} style={{ gap: 8 }}>
+              <span className="grow">
+                {p.icon} {p.label}{" "}
+                <b>{p.done}</b> <small className="muted">· {p.targetText}</small>
+              </span>
+              <span className={"pill" + (p.status === "below" ? "" : " ok")}>
+                {p.status === "in" ? "✓ " : ""}
+                {p.badge}
+              </span>
+            </div>
+          ))}
         </div>
-        <p className="muted">
-          Treino {workouts}/5 • Água {water} ml • Alimentação {kcal} kcal
-        </p>
       </div>
 
       <div className="card dark">
@@ -173,25 +163,28 @@ export function HomeScreen({ navigate }: { navigate: (s: Screen) => void }) {
         </p>
       </div>
 
-      {editGoal && (
+      {editTargets && (
         <InputSheet
-          title="Meta semanal de consistência"
+          title="Editar alvos da semana"
           fields={[
-            {
-              key: "goal",
-              label: "Meta (%)",
-              type: "number",
-              min: 1,
-              value: String(state.settings.weeklyGoalPct),
-            },
+            { key: "wmin", label: "Treinos — mínimo/semana", type: "number", min: 0, value: String(state.settings.workoutMinPerWeek) },
+            { key: "wmax", label: "Treinos — máximo/semana", type: "number", min: 1, value: String(state.settings.workoutMaxPerWeek) },
+            { key: "water", label: "Água — dias/semana na meta", type: "number", min: 1, value: String(state.settings.waterDaysTarget) },
+            { key: "food", label: "Alimentação — dias/semana no limite", type: "number", min: 1, value: String(state.settings.nutritionDaysTarget) },
           ]}
-          onClose={() => setEditGoal(false)}
+          onClose={() => setEditTargets(false)}
           onSubmit={(v) => {
-            const n = Number(v.goal);
-            if (n >= 1 && n <= 100) {
-              actions.updateSettings({ weeklyGoalPct: n });
-              toast("Meta semanal atualizada");
-            }
+            const wmin = Number(v.wmin);
+            const wmax = Number(v.wmax);
+            const water = Number(v.water);
+            const food = Number(v.food);
+            actions.updateSettings({
+              workoutMinPerWeek: wmin >= 0 ? wmin : state.settings.workoutMinPerWeek,
+              workoutMaxPerWeek: wmax >= 1 ? Math.max(wmax, wmin) : state.settings.workoutMaxPerWeek,
+              waterDaysTarget: water >= 1 && water <= 7 ? water : state.settings.waterDaysTarget,
+              nutritionDaysTarget: food >= 1 && food <= 7 ? food : state.settings.nutritionDaysTarget,
+            });
+            toast("Alvos atualizados");
           }}
         />
       )}

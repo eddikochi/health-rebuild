@@ -143,6 +143,96 @@ export function getWeeklyHydrationDays(state: AppState, ref: ISODate): number {
   return hit;
 }
 
+// Dias distintos da semana com alimentação dentro do limite calórico.
+export function getWeeklyNutritionDays(state: AppState, ref: ISODate): number {
+  const days = new Set(
+    state.foodLogs.filter((l) => sameWeek(l.date, ref) && l.consumed).map((l) => l.date),
+  );
+  let within = 0;
+  days.forEach((d) => {
+    if (getDailyCalories(state, d) <= state.settings.calorieLimit) within++;
+  });
+  return within;
+}
+
+export type PillarStatus = "below" | "in" | "above";
+
+export interface GoalPillar {
+  key: "treino" | "agua" | "alimentacao";
+  icon: string;
+  label: string;
+  done: number;
+  targetText: string;
+  status: PillarStatus;
+  badge: string;
+  met: boolean;
+}
+
+export interface GoalReadout {
+  pillars: GoalPillar[];
+  metCount: number;
+  total: number;
+}
+
+function daysBadge(missing: number): string {
+  return missing === 1 ? "falta 1 dia" : `faltam ${missing} dias`;
+}
+
+// Metas didáticas: alvos concretos por pilar + leitura de abaixo/acima (semana).
+export function getWeeklyGoalReadout(state: AppState, ref = todayISO()): GoalReadout {
+  const s = state.settings;
+  const pillars: GoalPillar[] = [];
+
+  // Treino (mín–máx)
+  const treinos = getWeeklyWorkoutCount(state, ref);
+  const tMin = s.workoutMinPerWeek;
+  const tMax = s.workoutMaxPerWeek;
+  pillars.push({
+    key: "treino",
+    icon: "🏋️",
+    label: "Treinos",
+    done: treinos,
+    targetText: `alvo ${tMin}–${tMax}`,
+    status: treinos < tMin ? "below" : treinos > tMax ? "above" : "in",
+    badge:
+      treinos < tMin
+        ? `falta ${tMin - treinos} p/ mínimo`
+        : treinos > tMax
+          ? `${treinos - tMax} acima do máx.`
+          : "na meta",
+    met: treinos >= tMin,
+  });
+
+  // Água (dias/semana)
+  const aguaDias = getWeeklyHydrationDays(state, ref);
+  pillars.push({
+    key: "agua",
+    icon: "💧",
+    label: "Água",
+    done: aguaDias,
+    targetText: `alvo ${s.waterDaysTarget} de 7 dias`,
+    status: aguaDias < s.waterDaysTarget ? "below" : "in",
+    badge: aguaDias < s.waterDaysTarget ? daysBadge(s.waterDaysTarget - aguaDias) : "na meta",
+    met: aguaDias >= s.waterDaysTarget,
+  });
+
+  // Alimentação (dias/semana dentro do limite)
+  const alimDias = getWeeklyNutritionDays(state, ref);
+  pillars.push({
+    key: "alimentacao",
+    icon: "🍽️",
+    label: "Alimentação",
+    done: alimDias,
+    targetText: `alvo ${s.nutritionDaysTarget} de 7 dias`,
+    status: alimDias < s.nutritionDaysTarget ? "below" : "in",
+    badge:
+      alimDias < s.nutritionDaysTarget ? daysBadge(s.nutritionDaysTarget - alimDias) : "na meta",
+    met: alimDias >= s.nutritionDaysTarget,
+  });
+
+  return { pillars, metCount: pillars.filter((p) => p.met).length, total: pillars.length };
+}
+
 // Insight factual e não-diagnóstico (PRD §17).
 export function getWeeklyInsight(state: AppState, ref = todayISO()): string {
   const workouts = getWeeklyWorkoutCount(state, ref);
