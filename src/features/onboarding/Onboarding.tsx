@@ -14,7 +14,8 @@ export function Onboarding({ navigate, onDone }: { navigate: (s: Screen) => void
   const [height, setHeight] = useState(String(state.profile.heightCm));
   const [weight, setWeight] = useState(String(state.profile.baselineWeightKg));
   const [goals, setGoals] = useState<string[]>(state.goals);
-  const [weeklyGoal, setWeeklyGoal] = useState(String(state.settings.weeklyGoalPct));
+  const [wMin, setWMin] = useState(String(state.settings.workoutMinPerWeek));
+  const [wMax, setWMax] = useState(String(state.settings.workoutMaxPerWeek));
   const [waterGoal, setWaterGoal] = useState(String(state.settings.waterGoalMl));
 
   const toggleGoal = (g: string) =>
@@ -31,10 +32,12 @@ export function Onboarding({ navigate, onDone }: { navigate: (s: Screen) => void
     });
     if (weightN > 0) actions.addMeasurement(todayISO(), { weightKg: weightN });
     actions.setGoals(goals);
-    const wg = Number(weeklyGoal);
+    const min = Number(wMin);
+    const max = Number(wMax);
     const water = Number(waterGoal);
     actions.updateSettings({
-      weeklyGoalPct: wg >= 1 && wg <= 100 ? wg : state.settings.weeklyGoalPct,
+      workoutMinPerWeek: min >= 0 ? min : state.settings.workoutMinPerWeek,
+      workoutMaxPerWeek: max >= 1 ? Math.max(max, min) : state.settings.workoutMaxPerWeek,
       waterGoalMl: water > 0 ? water : state.settings.waterGoalMl,
     });
   };
@@ -150,15 +153,32 @@ export function Onboarding({ navigate, onDone }: { navigate: (s: Screen) => void
         {step === 3 && (
           <div>
             <div className="eyebrow">Passo 3</div>
-            <h1>Metas</h1>
-            <p className="muted">Valores iniciais — ajuste quando quiser.</p>
+            <h1>Suas metas da semana</h1>
+            <p className="muted">
+              Nada de números abstratos: você define <b>alvos simples</b> e, na tela Hoje,
+              acompanha quantos já cumpriu (ex.: "Treinos 3 · alvo 3–5 ✓ na meta").
+            </p>
             <div className="card stack">
               <div className="field">
-                <label htmlFor="ob-week">Meta semanal de consistência (%)</label>
-                <input id="ob-week" type="number" inputMode="numeric" value={weeklyGoal} onChange={(e) => setWeeklyGoal(e.target.value)} />
+                <label>Treinos por semana</label>
+                <div className="row" style={{ gap: 8 }}>
+                  <div className="field" style={{ flex: 1 }}>
+                    <label htmlFor="ob-wmin" className="muted" style={{ fontWeight: 400 }}>
+                      mínimo
+                    </label>
+                    <input id="ob-wmin" type="number" inputMode="numeric" value={wMin} onChange={(e) => setWMin(e.target.value)} />
+                  </div>
+                  <div className="field" style={{ flex: 1 }}>
+                    <label htmlFor="ob-wmax" className="muted" style={{ fontWeight: 400 }}>
+                      máximo
+                    </label>
+                    <input id="ob-wmax" type="number" inputMode="numeric" value={wMax} onChange={(e) => setWMax(e.target.value)} />
+                  </div>
+                </div>
+                <small className="muted">Sugestão: 3 a 5 treinos por semana.</small>
               </div>
               <div className="field">
-                <label htmlFor="ob-water">Meta diária de água (ml)</label>
+                <label htmlFor="ob-water">Água por dia (ml)</label>
                 <input id="ob-water" type="number" inputMode="numeric" value={waterGoal} onChange={(e) => setWaterGoal(e.target.value)} />
               </div>
             </div>
