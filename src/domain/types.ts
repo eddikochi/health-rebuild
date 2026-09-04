@@ -94,6 +94,8 @@ export interface Food {
   name: string;
   kcalPer100g: number;
   meal: Meal;
+  unitLabel: string; // "ovo", "fatia", "unidade", "colher", "g"…
+  unitGrams: number; // peso médio de 1 unidade, em gramas
 }
 
 export interface FoodLog {
@@ -101,9 +103,12 @@ export interface FoodLog {
   date: ISODate;
   name: string;
   kcalPer100g: number;
-  grams: number;
+  grams: number; // gramas totais (= quantity × unitGrams), fonte do cálculo de kcal
   meal: Meal;
   consumed: boolean;
+  quantity: number; // quantas unidades
+  unitLabel: string;
+  unitGrams: number;
 }
 
 // ---- Hidratação ----

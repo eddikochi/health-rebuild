@@ -22,11 +22,31 @@ export function migrate(raw: any): AppState {
 
   // Preenche campos ausentes com defaults do seed (aditivo, não destrutivo).
   const base = seedState();
-  return {
+  const merged: AppState = {
     ...base,
     ...state,
     schemaVersion: SCHEMA_VERSION,
     settings: { ...base.settings, ...(state.settings ?? {}) },
     profile: { ...base.profile, ...(state.profile ?? {}) },
   };
+
+  // Normaliza unidades em alimentos/registros anteriores ao sistema de porções.
+  merged.foods = (merged.foods ?? []).map((f: any) => ({
+    ...f,
+    unitLabel: f.unitLabel ?? "porção",
+    unitGrams: typeof f.unitGrams === "number" ? f.unitGrams : 100,
+  }));
+  merged.foodLogs = (merged.foodLogs ?? []).map((l: any) => {
+    const unitGrams = typeof l.unitGrams === "number" ? l.unitGrams : (l.grams ?? 100);
+    const quantity = typeof l.quantity === "number" ? l.quantity : 1;
+    return {
+      ...l,
+      unitLabel: l.unitLabel ?? "porção",
+      unitGrams,
+      quantity,
+      grams: typeof l.grams === "number" ? l.grams : quantity * unitGrams,
+    };
+  });
+
+  return merged;
 }

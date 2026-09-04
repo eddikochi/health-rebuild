@@ -47,16 +47,29 @@ interface AppActions {
   addContainer(ml: number): void;
   removeContainer(id: ID): void;
   // food library
-  addFood(name: string, kcalPer100g: number, meal: Meal): void;
+  addFood(
+    name: string,
+    kcalPer100g: number,
+    meal: Meal,
+    unitLabel: string,
+    unitGrams: number,
+  ): void;
   updateFood(id: ID, patch: Partial<Food>): void;
   removeFood(id: ID): void;
   // food logs
   addFoodLog(
     date: ISODate,
-    data: { name: string; kcalPer100g: number; grams: number; meal: Meal },
+    data: {
+      name: string;
+      kcalPer100g: number;
+      meal: Meal;
+      quantity: number;
+      unitLabel: string;
+      unitGrams: number;
+    },
   ): void;
   toggleFoodLog(id: ID): void;
-  updateFoodLog(id: ID, patch: { grams?: number; kcalPer100g?: number; name?: string }): void;
+  updateFoodLogQuantity(id: ID, quantity: number): void;
   removeFoodLog(id: ID): void;
   // body
   addMeasurement(date: ISODate, data: BodyMeasurementData): void;
@@ -190,10 +203,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       },
 
       // ---- food library ----
-      addFood(name, kcalPer100g, meal) {
+      addFood(name, kcalPer100g, meal, unitLabel, unitGrams) {
         setState((s) => ({
           ...s,
-          foods: [...s.foods, { id: uid(), name, kcalPer100g, meal }],
+          foods: [
+            ...s.foods,
+            { id: uid(), name, kcalPer100g, meal, unitLabel, unitGrams },
+          ],
         }));
       },
       updateFood(id, patch) {
@@ -208,9 +224,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // ---- food logs ----
       addFoodLog(date, data) {
+        const grams = data.quantity * data.unitGrams;
         setState((s) => ({
           ...s,
-          foodLogs: [...s.foodLogs, { id: uid(), date, consumed: true, ...data }],
+          foodLogs: [...s.foodLogs, { id: uid(), date, consumed: true, grams, ...data }],
         }));
       },
       toggleFoodLog(id) {
@@ -221,10 +238,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ),
         }));
       },
-      updateFoodLog(id, patch) {
+      updateFoodLogQuantity(id, quantity) {
         setState((s) => ({
           ...s,
-          foodLogs: s.foodLogs.map((l) => (l.id === id ? { ...l, ...patch } : l)),
+          foodLogs: s.foodLogs.map((l) =>
+            l.id === id ? { ...l, quantity, grams: quantity * l.unitGrams } : l,
+          ),
         }));
       },
       removeFoodLog(id) {

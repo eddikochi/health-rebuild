@@ -86,27 +86,30 @@ function seedRoutines(): Routine[] {
 }
 
 function seedFoods(): Food[] {
-  const items: Array<[string, number, Meal]> = [
-    ["Ovos", 155, "Café da manhã"],
-    ["Pão", 265, "Café da manhã"],
-    ["Banana", 89, "Café da manhã"],
-    ["Iogurte", 63, "Café da manhã"],
-    ["Arroz", 130, "Almoço"],
-    ["Feijão", 76, "Almoço"],
-    ["Frango", 165, "Almoço"],
-    ["Brócolis", 35, "Almoço"],
-    ["Granola", 450, "Lanche da tarde"],
-    ["Banana", 89, "Lanche da tarde"],
-    ["Carne moída", 220, "Janta"],
-    ["Batata", 77, "Janta"],
-    ["Legumes", 50, "Janta"],
-    ["Salada", 25, "Janta"],
+  // [nome, kcal/100g, refeição, rótulo da unidade, gramas médias por unidade]
+  const items: Array<[string, number, Meal, string, number]> = [
+    ["Ovos", 155, "Café da manhã", "ovo", 50],
+    ["Pão", 265, "Café da manhã", "fatia", 30],
+    ["Banana", 89, "Café da manhã", "unidade", 100],
+    ["Iogurte", 63, "Café da manhã", "pote", 170],
+    ["Arroz", 130, "Almoço", "colher de sopa", 25],
+    ["Feijão", 76, "Almoço", "concha", 80],
+    ["Frango", 165, "Almoço", "filé", 100],
+    ["Brócolis", 35, "Almoço", "porção", 80],
+    ["Granola", 450, "Lanche da tarde", "colher de sopa", 15],
+    ["Banana", 89, "Lanche da tarde", "unidade", 100],
+    ["Carne moída", 220, "Janta", "porção", 100],
+    ["Batata", 77, "Janta", "unidade", 130],
+    ["Legumes", 50, "Janta", "porção", 80],
+    ["Salada", 25, "Janta", "porção", 60],
   ];
-  return items.map(([name, kcalPer100g, meal]) => ({
+  return items.map(([name, kcalPer100g, meal, unitLabel, unitGrams]) => ({
     id: uid(),
     name,
     kcalPer100g,
     meal,
+    unitLabel,
+    unitGrams,
   }));
 }
 

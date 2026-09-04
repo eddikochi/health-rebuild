@@ -80,17 +80,22 @@ function TodayTab({ date, setDate }: { date: ISODate; setDate: (d: ISODate) => v
                     {l.name}
                     <br />
                     <small className="muted">
-                      {l.kcalPer100g} kcal/100g • {Math.round((l.kcalPer100g * l.grams) / 100)} kcal
+                      {l.grams} g • {Math.round((l.kcalPer100g * l.grams) / 100)} kcal
                     </small>
                   </span>
                   <input
                     type="number"
-                    inputMode="numeric"
-                    aria-label={`Gramas de ${l.name}`}
-                    style={{ width: 80 }}
-                    value={l.grams}
-                    onChange={(e) => actions.updateFoodLog(l.id, { grams: Number(e.target.value) })}
+                    inputMode="decimal"
+                    step="0.5"
+                    min={0}
+                    aria-label={`Quantidade de ${l.name} em ${l.unitLabel}`}
+                    style={{ width: 64, textAlign: "center" }}
+                    value={l.quantity}
+                    onChange={(e) => actions.updateFoodLogQuantity(l.id, Number(e.target.value))}
                   />
+                  <small className="muted" style={{ minWidth: 44 }}>
+                    {l.unitLabel}
+                  </small>
                   <TrashButton label={`Remover ${l.name}`} onClick={() => actions.removeFoodLog(l.id)} />
                 </div>
               ))
@@ -179,7 +184,11 @@ function LibraryTab() {
       {state.foods.map((f) => (
         <div className="item" key={f.id}>
           <span className="grow">
-            {f.name} • {f.kcalPer100g} kcal/100g • <small className="muted">{f.meal}</small>
+            {f.name} • {f.kcalPer100g} kcal/100g
+            <br />
+            <small className="muted">
+              1 {f.unitLabel} ≈ {f.unitGrams} g • {f.meal}
+            </small>
           </span>
           <button className="btn" aria-label={`Editar ${f.name}`} onClick={() => setEditing(f)}>
             Editar
@@ -202,15 +211,20 @@ function LibraryTab() {
           fields={[
             { key: "name", label: "Nome", value: editing.name },
             { key: "kcal", label: "kcal / 100 g", type: "number", min: 0, value: String(editing.kcalPer100g) },
+            { key: "unitLabel", label: "Unidade (ovo, fatia…)", value: editing.unitLabel },
+            { key: "unitGrams", label: "Peso médio da unidade (g)", type: "number", min: 1, value: String(editing.unitGrams) },
             { key: "meal", label: "Refeição", value: editing.meal, options: mealOptions },
           ]}
           onClose={() => setEditing(null)}
           onSubmit={(v) => {
             const name = v.name.trim();
             const kcal = Number(v.kcal);
+            const ug = Number(v.unitGrams);
             actions.updateFood(editing.id, {
               name: name || editing.name,
               kcalPer100g: kcal >= 0 ? kcal : editing.kcalPer100g,
+              unitLabel: v.unitLabel.trim() || editing.unitLabel,
+              unitGrams: ug > 0 ? ug : editing.unitGrams,
               meal: v.meal as Meal,
             });
           }}
@@ -223,6 +237,8 @@ function LibraryTab() {
           fields={[
             { key: "name", label: "Nome", value: "" },
             { key: "kcal", label: "kcal / 100 g", type: "number", min: 0, value: "100" },
+            { key: "unitLabel", label: "Unidade (ovo, fatia…)", value: "porção" },
+            { key: "unitGrams", label: "Peso médio da unidade (g)", type: "number", min: 1, value: "100" },
             { key: "meal", label: "Refeição", value: "Almoço", options: mealOptions },
           ]}
           onClose={() => setAdding(false)}
@@ -230,7 +246,8 @@ function LibraryTab() {
             const name = v.name.trim();
             if (!name) return;
             const kcal = Number(v.kcal);
-            actions.addFood(name, kcal >= 0 ? kcal : 0, v.meal as Meal);
+            const ug = Number(v.unitGrams);
+            actions.addFood(name, kcal >= 0 ? kcal : 0, v.meal as Meal, v.unitLabel.trim() || "porção", ug > 0 ? ug : 100);
           }}
         />
       )}

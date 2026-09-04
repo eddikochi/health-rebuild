@@ -28,6 +28,9 @@ describe("nutrition", () => {
       grams: 150,
       meal: "Almoço",
       consumed: true,
+      quantity: 1.5,
+      unitLabel: "filé",
+      unitGrams: 100,
     });
     expect(getDailyCalories(s, DATE)).toBe(248); // 165*1.5 = 247.5 -> 248
   });
@@ -35,8 +38,8 @@ describe("nutrition", () => {
   it("apenas alimentos consumidos entram no total", () => {
     const s = baseState();
     s.foodLogs.push(
-      { id: "1", date: DATE, name: "A", kcalPer100g: 100, grams: 100, meal: "Almoço", consumed: true },
-      { id: "2", date: DATE, name: "B", kcalPer100g: 100, grams: 100, meal: "Almoço", consumed: false },
+      { id: "1", date: DATE, name: "A", kcalPer100g: 100, grams: 100, meal: "Almoço", consumed: true, quantity: 1, unitLabel: "porção", unitGrams: 100 },
+      { id: "2", date: DATE, name: "B", kcalPer100g: 100, grams: 100, meal: "Almoço", consumed: false, quantity: 1, unitLabel: "porção", unitGrams: 100 },
     );
     expect(getDailyCalories(s, DATE)).toBe(100);
   });
@@ -44,8 +47,8 @@ describe("nutrition", () => {
   it("soma refeições diferentes no mesmo dia", () => {
     const s = baseState();
     s.foodLogs.push(
-      { id: "1", date: DATE, name: "A", kcalPer100g: 100, grams: 100, meal: "Café da manhã", consumed: true },
-      { id: "2", date: DATE, name: "B", kcalPer100g: 200, grams: 100, meal: "Janta", consumed: true },
+      { id: "1", date: DATE, name: "A", kcalPer100g: 100, grams: 100, meal: "Café da manhã", consumed: true, quantity: 1, unitLabel: "porção", unitGrams: 100 },
+      { id: "2", date: DATE, name: "B", kcalPer100g: 200, grams: 100, meal: "Janta", consumed: true, quantity: 1, unitLabel: "porção", unitGrams: 100 },
     );
     expect(getDailyCalories(s, DATE)).toBe(300);
   });
