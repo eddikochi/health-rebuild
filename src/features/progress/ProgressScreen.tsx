@@ -7,6 +7,7 @@ import {
   getCalorieSeries,
   getConsistencyScore,
   getMaxLoad,
+  getMonthlyGoalReadout,
   getVolumeSeries,
   getWaistSeries,
   getWeeklyCardioMinutes,
@@ -211,6 +212,7 @@ function ConsistencyTab() {
   ];
   return (
     <>
+      <MonthlyGoalsCard />
       <ConsistencyCalendar />
 
       <div className="card">
@@ -240,6 +242,38 @@ function ConsistencyTab() {
       <CheckInCard onOpen={() => setCheckin(true)} />
       {checkin && <CheckInForm onClose={() => setCheckin(false)} />}
     </>
+  );
+}
+
+function MonthlyGoalsCard() {
+  const { state } = useApp();
+  const readout = getMonthlyGoalReadout(state);
+  return (
+    <div className="card">
+      <div className="row">
+        <div>
+          <div className="eyebrow">Metas de {readout.monthLabel}</div>
+          <h2 style={{ margin: 0 }}>
+            {readout.metCount}/{readout.total} alvos cumpridos
+          </h2>
+        </div>
+        <span className="muted">{readout.weeks} semanas</span>
+      </div>
+      <div className="stack" style={{ marginTop: 12 }}>
+        {readout.pillars.map((p) => (
+          <div className="row" key={p.key} style={{ gap: 8 }}>
+            <span className="grow">
+              {p.icon} {p.label} <b>{p.done}</b>{" "}
+              <small className="muted">· {p.targetText}</small>
+            </span>
+            <span className={"pill" + (p.status === "below" ? "" : " ok")}>
+              {p.status === "in" ? "✓ " : ""}
+              {p.badge}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 

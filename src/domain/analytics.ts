@@ -233,6 +233,109 @@ export function getWeeklyGoalReadout(state: AppState, ref = todayISO()): GoalRea
   return { pillars, metCount: pillars.filter((p) => p.met).length, total: pillars.length };
 }
 
+function sameMonth(a: ISODate, b: ISODate): boolean {
+  return a.slice(0, 7) === b.slice(0, 7);
+}
+
+export function getMonthlyWorkoutCount(state: AppState, ref: ISODate): number {
+  return state.workouts.filter((w) => w.completed && sameMonth(w.date, ref)).length;
+}
+
+function monthDaysMeeting(
+  state: AppState,
+  ref: ISODate,
+  source: "water" | "food",
+): number {
+  const logs = source === "water" ? state.waterLogs : state.foodLogs;
+  const days = new Set(
+    logs.filter((l) => l.consumed && sameMonth(l.date, ref)).map((l) => l.date),
+  );
+  let hit = 0;
+  days.forEach((d) => {
+    const ok =
+      source === "water"
+        ? getDailyWaterMl(state, d) >= state.settings.waterGoalMl
+        : getDailyCalories(state, d) <= state.settings.calorieLimit;
+    if (ok) hit++;
+  });
+  return hit;
+}
+
+export interface MonthlyReadout {
+  monthLabel: string;
+  weeks: number;
+  pillars: GoalPillar[];
+  metCount: number;
+  total: number;
+}
+
+const MONTH_NAMES = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+];
+
+// Metas do mês: alvos semanais escalados pelo nº de semanas do mês (PRD §15).
+export function getMonthlyGoalReadout(state: AppState, ref = todayISO()): MonthlyReadout {
+  const s = state.settings;
+  const [year, month] = ref.split("-").map(Number);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const weeks = Math.max(1, Math.round(daysInMonth / 7));
+
+  const treinos = getMonthlyWorkoutCount(state, ref);
+  const tMin = s.workoutMinPerWeek * weeks;
+  const tMax = s.workoutMaxPerWeek * weeks;
+  const aguaDias = monthDaysMeeting(state, ref, "water");
+  const aguaAlvo = s.waterDaysTarget * weeks;
+  const alimDias = monthDaysMeeting(state, ref, "food");
+  const alimAlvo = s.nutritionDaysTarget * weeks;
+
+  const pillars: GoalPillar[] = [
+    {
+      key: "treino",
+      icon: "🏋️",
+      label: "Treinos",
+      done: treinos,
+      targetText: `alvo ${tMin}–${tMax}`,
+      status: treinos < tMin ? "below" : treinos > tMax ? "above" : "in",
+      badge:
+        treinos < tMin
+          ? `${tMin - treinos} abaixo do mínimo`
+          : treinos > tMax
+            ? `${treinos - tMax} acima do máx.`
+            : "na meta",
+      met: treinos >= tMin,
+    },
+    {
+      key: "agua",
+      icon: "💧",
+      label: "Água",
+      done: aguaDias,
+      targetText: `alvo ${aguaAlvo} dias`,
+      status: aguaDias < aguaAlvo ? "below" : "in",
+      badge: aguaDias < aguaAlvo ? `${aguaAlvo - aguaDias} dia(s) abaixo` : "na meta",
+      met: aguaDias >= aguaAlvo,
+    },
+    {
+      key: "alimentacao",
+      icon: "🍽️",
+      label: "Alimentação",
+      done: alimDias,
+      targetText: `alvo ${alimAlvo} dias`,
+      status: alimDias < alimAlvo ? "below" : "in",
+      badge: alimDias < alimAlvo ? `${alimAlvo - alimDias} dia(s) abaixo` : "na meta",
+      met: alimDias >= alimAlvo,
+    },
+  ];
+
+  return {
+    monthLabel: MONTH_NAMES[month - 1],
+    weeks,
+    pillars,
+    metCount: pillars.filter((p) => p.met).length,
+    total: pillars.length,
+  };
+}
+
 // Insight factual e não-diagnóstico (PRD §17).
 export function getWeeklyInsight(state: AppState, ref = todayISO()): string {
   const workouts = getWeeklyWorkoutCount(state, ref);
