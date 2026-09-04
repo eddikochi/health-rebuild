@@ -41,6 +41,7 @@ interface AppActions {
   updateSettings(patch: Partial<AppState["settings"]>): void;
   updateProfile(patch: Partial<AppState["profile"]>): void;
   toggleGoal(goal: string): void;
+  setGoals(goals: string[]): void;
   // water
   addWaterLog(date: ISODate, ml: number, consumed?: boolean): void;
   toggleWaterLog(id: ID): void;
@@ -176,6 +177,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ? s.goals.filter((g) => g !== goal)
             : [...s.goals, goal],
         }));
+      },
+      setGoals(goals) {
+        setState((s) => ({ ...s, goals }));
       },
 
       // ---- water ----

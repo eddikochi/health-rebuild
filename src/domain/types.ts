@@ -24,6 +24,7 @@ export interface Settings {
   calorieLimit: number;
   weeklyGoalPct: number;
   defaultRestSeconds: number;
+  onboardedAt?: ISOTimestamp; // definido quando o onboarding é concluído/pulado
 }
 
 // ---- Treino: template (planejado) ----

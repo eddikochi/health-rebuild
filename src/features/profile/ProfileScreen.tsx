@@ -242,6 +242,16 @@ function PrefsTab() {
         <button
           className="btn ghost block"
           style={{ marginTop: 8 }}
+          onClick={() => {
+            actions.updateSettings({ onboardedAt: undefined });
+            toast("Tour reiniciado");
+          }}
+        >
+          Refazer tour de boas-vindas
+        </button>
+        <button
+          className="btn ghost block"
+          style={{ marginTop: 8 }}
           onClick={async () => {
             if (await confirm({ title: "Apagar todos os dados?", message: "Esta ação não pode ser desfeita." })) {
               actions.reset();
